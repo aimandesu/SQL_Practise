@@ -96,13 +96,71 @@ INNER JOIN dbo.Listing L
 ORDER BY L.ListedAt ASC
 
 -- 6.What percentile does each property's rent fall in across all listings? Show properties above the 75th percentile.
+
+SELECT 
+    *,
+    CONCAT(DISTRIBUTION_RENT * 100, '%') DISTRIBUTION_RENT_PERCENTAGE
+FROM(
+    SELECT
+        P.PropertyName,
+        L.MonthlyRent,
+        CUME_DIST() OVER(
+            ORDER BY L.MonthlyRent) DISTRIBUTION_RENT
+    FROM dbo.Listing L
+    INNER JOIN dbo.Property P
+        ON L.PropertyID = P.Id
+    INNER JOIN dbo.[Location] Loc
+        ON Loc.Id = P.LocationID
+)t
+WHERE DISTRIBUTION_RENT > 0.75
+
 -- 7.Rank properties by number of bathrooms. Handle ties without gaps in rank. Which rank has the most properties?
 -- 8.For each region, show each property alongside the cheapest rent ever listed in that region.
+
+SELECT 
+    -- R.Name as REGION,
+    R.Id as REGION_ID,
+    P.PropertyName,
+    L.MonthlyRent,
+    FIRST_VALUE(L.MonthlyRent) OVER(
+        PARTITION BY R.Id 
+        ORDER BY L.MonthlyRent ASC) CHEAPEST_RENT
+FROM dbo.Listing L
+INNER JOIN dbo.Property P
+    ON L.PropertyID = P.Id
+INNER JOIN dbo.[Location] Loc
+    ON P.LocationID = Loc.Id
+INNER JOIN dbo.Region R
+    ON R.Id = Loc.RegionID
 
 -- CTEs
 
 -- 9. Build a recursive CTE that segments properties into tiers: Budget (<2000), Mid (2000–4000), Premium (>4000) and counts each tier.
+
+WITH SegmentationProperty AS (
+    SELECT
+        P.Id AS PropertyID,
+        L.MonthlyRent,
+        CASE 
+            WHEN L.MonthlyRent < 2000 THEN 'Budget'
+            WHEN L.MonthlyRent >= 2000 AND L.MonthlyRent <=4000 THEN 'Mid'
+            ELSE 'Premium'
+        END as TIER
+    FROM dbo.Property P
+    INNER JOIN dbo.Listing L
+        ON P.Id = L.PropertyID
+)
+
+SELECT
+    TIER,
+    COUNT(PropertyID) AS PROPERTY_COUNT
+FROM SegmentationProperty
+GROUP BY TIER
+
 -- 10. Write a multi-CTE query: first compute average rent per location, then find locations whose average is above the global average.
+
+
+
 -- 11. Chain 3 CTEs: (1) count facilities per property, (2) count benefits per property, (3) join both and rank properties by total perks.
 -- 12. Using a CTE, identify properties whose rent is more than 1.5 standard deviations above the mean rent for their property type.
 -- 13. Listings can have multiple entries for the same property. Use a CTE to return only the most recent listing per property.
