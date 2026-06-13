@@ -17,6 +17,20 @@ FROM(
 )t
 WHERE Facility NOT LIKE '%[0-9]%'
 
+SELECT 
+    -- A.ads_id,
+    -- P.AdsID,
+    P.Id AS Id,
+    -- TRIM(F.value) AS Facility,
+    FACI.Id as FacilityId
+FROM dbo.apartment A
+LEFT JOIN dbo.Property P
+    ON A.ads_id = P.AdsID
+OUTER APPLY STRING_SPLIT(A.facilities, ',') F
+INNER JOIN dbo.Facility FACI
+    ON TRIM(F.value) = FACI.Category
+WHERE TRIM(F.value) NOT LIKE '%[0-9]%' AND P.Id IS NOT NULL;
+
 -- Property Type
 SELECT DISTINCT 
         TRIM(value) AS [Type]
@@ -44,7 +58,7 @@ SELECT DISTINCT
 FROM dbo.Apartment
 WHERE [location] LIKE '%-%';
 
--- Additional Facilities
+-- Additional Facilities (Benefit)
 SELECT 
     *
 FROM(
@@ -54,6 +68,20 @@ FROM(
     CROSS APPLY STRING_SPLIT(additional_facilities, ',')
 )t
 WHERE Benefit NOT LIKE ''
+
+SELECT 
+    -- A.ads_id,
+    -- P.AdsID,
+    P.Id AS Id,
+    -- TRIM(F.value) AS Facility,
+    Benefit.Id as BenefitID
+FROM dbo.apartment A
+LEFT JOIN dbo.Property P
+    ON A.ads_id = P.AdsID
+OUTER APPLY STRING_SPLIT(A.additional_facilities, ',') F
+INNER JOIN dbo.Benefit Benefit
+    ON TRIM(F.value) = Benefit.Description
+WHERE TRIM(F.value) NOT LIKE '%[0-9]%' AND P.Id IS NOT NULL;
 
 -- Property
 
@@ -128,6 +156,52 @@ ON A.prop_name LIKE P.PropertyName
 -- ) t
 -- WHERE Facility NOT LIKE '%[0-9]%';
 
+--Propery Facilities
+
+-- INSERT INTO dbo.PropertyFacility(Id, FacilityId)
+-- SELECT 
+--     -- A.ads_id,
+--     -- P.AdsID,
+--     P.Id AS Id,
+--     -- TRIM(F.value) AS Facility,
+--     FACI.Id as FacilityId
+-- FROM dbo.apartment A
+-- LEFT JOIN dbo.Property P
+--     ON A.ads_id = P.AdsID
+-- OUTER APPLY STRING_SPLIT(A.facilities, ',') F
+-- INNER JOIN dbo.Facility FACI
+--     ON TRIM(F.value) = FACI.Category
+-- WHERE TRIM(F.value) NOT LIKE '%[0-9]%' AND P.Id IS NOT NULL;
+
+-- -- Benefit
+-- INSERT INTO dbo.Benefit([Description])
+-- SELECT 
+--     *
+-- FROM(
+--     SELECT DISTINCT 
+--         TRIM(value) AS Benefit
+--     FROM dbo.apartment
+--     CROSS APPLY STRING_SPLIT(additional_facilities, ',')
+-- )t
+-- WHERE Benefit NOT LIKE ''
+
+-- PropertyBenefit
+
+-- INSERT INTO dbo.PropertyBenefit(Id, BenefitID)
+-- SELECT 
+--     -- A.ads_id,
+--     -- P.AdsID,
+--     P.Id AS Id,
+--     -- TRIM(F.value) AS Facility,
+--     Benefit.Id as BenefitID
+-- FROM dbo.apartment A
+-- LEFT JOIN dbo.Property P
+--     ON A.ads_id = P.AdsID
+-- OUTER APPLY STRING_SPLIT(A.additional_facilities, ',') F
+-- INNER JOIN dbo.Benefit Benefit
+--     ON TRIM(F.value) = Benefit.Description
+-- WHERE TRIM(F.value) NOT LIKE '%[0-9]%' AND P.Id IS NOT NULL;
+
 -- Property Type
 
 -- INSERT INTO dbo.PropertyType
@@ -177,7 +251,8 @@ ON A.prop_name LIKE P.PropertyName
 --     SizeSqft,
 --     FurnishingStatusID,
 --     PropertyTypeID,
---     LocationID
+--     LocationID,
+--     AdsId
 -- )
 -- SELECT
 --     *
@@ -192,7 +267,8 @@ ON A.prop_name LIKE P.PropertyName
 --     A.size AS SizeSqft,
 --     FS.Id AS FurnishingStatusID,
 --     PT.Id AS PropertyTypeID,
---     L.Id AS LocationID
+--     L.Id AS LocationID,
+--     A.ads_id AS AdsId
 -- FROM dbo.Apartment A
 -- LEFT JOIN dbo.FurnishingStatus FS
 --     ON A.furnished = FS.Status
@@ -234,7 +310,9 @@ ON A.prop_name LIKE P.PropertyName
 --     ) AS ListedAt
 -- FROM dbo.apartment A
 -- LEFT JOIN dbo.Property P
--- ON A.prop_name = P.PropertyName
+-- ON A.ads_id = P.AdsID
+-- WHERE P.PropertyName IS NOT NULL
+-- AND P.FurnishingStatusId IS NOT NULL
 
 -- check information columns
 SELECT
